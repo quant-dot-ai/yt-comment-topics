@@ -13,7 +13,8 @@ token = st.secrets["HUGGINGFACE_TOKEN"]["token"]
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 API_URL = "https://api-inference.huggingface.co/models/distilbert/distilbert-base-uncased-finetuned-sst-2-english"
-headers = {"Authorization": f"Bearer {token}"}
+headers = {"Authorization": f"Bearer {token}", 
+           "x-wait-for-model": "true"}
 
 
 
