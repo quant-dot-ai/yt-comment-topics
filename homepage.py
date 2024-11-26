@@ -5,6 +5,7 @@ import pandas as pd
 import googleapiclient.discovery
 from fastopic import FASTopic
 from topmost.preprocessing import Preprocessing
+from collections import Counter
 
 # Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
@@ -62,9 +63,36 @@ def get_topics_from_fasTopic(comments_text):
     st.plotly_chart(fig_topic_wts)
 
 
+
 def comment_section_sentiment(comment_texts):
-    response = requests.post(API_URL, headers=headers, json=comment_texts)
-    return response.json()
+    # Make API request to Hugging Face
+    response = requests.post(API_URL, headers=headers, json={"inputs": comment_texts})
+    
+    # Check if the response is successful
+    if response.status_code == 200:
+        sentiment_results = response.json()
+
+        if isinstance(sentiment_results, list):
+            # Count the occurrences of positive and negative sentiments
+            sentiment_counter = Counter()
+
+            for sentiment in sentiment_results:
+                sentiment_label = sentiment[0]['label']
+                sentiment_counter[sentiment_label] += 1
+
+            # Calculate percentages
+            total_comments = sum(sentiment_counter.values())
+            positive_percentage = (sentiment_counter["POSITIVE"] / total_comments) * 100
+            negative_percentage = (sentiment_counter["NEGATIVE"] / total_comments) * 100
+
+            # Display results in Streamlit
+            st.subheader("Overall Sentiment Analysis")
+            st.write(f"**Positive Sentiment:** {positive_percentage:.2f}%")
+            st.write(f"**Negative Sentiment:** {negative_percentage:.2f}%")
+        else:
+            st.error("Failed to parse sentiment analysis response.")
+    else:
+        st.error("Failed to get sentiment analysis. Please check the API call or your API key.")
     
 def main():
     # Streamlit UI
