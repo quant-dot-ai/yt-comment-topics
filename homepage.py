@@ -22,7 +22,7 @@ def get_comments(video_id, next_page_token=None):
         part="snippet",
         videoId=video_id,
         textFormat="plainText",
-        maxResults=10,
+        maxResults=100,
         pageToken=next_page_token,
         order="relevance"
     )
