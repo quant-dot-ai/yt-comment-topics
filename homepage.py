@@ -50,19 +50,9 @@ def get_topics_from_fasTopic(comments_text):
 
     # Display topic words in table form
     st.table(topic_top_words)
-    
-    # Visualize topics using available visualization methods in fastopic
-    st.subheader("Topic Distribution")
-    fig1 = model.plot_topic_distributions()  # Plot distribution of topics across all documents
-    st.pyplot(fig1)
-    
-    st.subheader("Topic Heatmap")
-    fig2 = model.plot_topic_heatmap()  # Plot heatmap to show the intensity of topics across the comments
-    st.pyplot(fig2)
 
-    st.subheader("Topic Word Scores")
-    fig3 = model.plot_word_scores()  # Plot the word scores per topic to show word significance
-    st.pyplot(fig3)
+    fig = model.visualize_topic(top_n=5)
+    st.pyplot(fig)
 
 def main():
     # Streamlit UI
