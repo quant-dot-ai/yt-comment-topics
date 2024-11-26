@@ -44,7 +44,7 @@ def get_comments(video_id, next_page_token=None):
 
 def get_topics_from_fasTopic(comments_text):
     preprocessing = Preprocessing(stopwords='English')
-    model = FASTopic(num_topics=5, preprocessing)
+    model = FASTopic(num_topics=5, preprocessing=preprocessing)
     topic_top_words, doc_topic_dist = model.fit_transform(comments_text)
     st.table(topic_top_words)
 
@@ -63,5 +63,5 @@ def main():
             st.dataframe(comments_text)
             get_topics_from_fasTopic(comments_text['text'].tolist())
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
