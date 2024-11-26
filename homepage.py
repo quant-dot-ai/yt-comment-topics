@@ -51,8 +51,11 @@ def get_topics_from_fasTopic(comments_text):
     # Display topic words in table form
     st.table(topic_top_words)
 
-    fig = model.visualize_topic(top_n=5)
-    st.plotly_chart(fig)
+    fig_topics = model.visualize_topic(top_n=5)
+    st.plotly_chart(fig_topics)
+
+    fig_topic_wts = model.visualize_topic_weights(top_n=20, height=500)
+    st.plotly_chart(fig_topic_wts)
 
 def main():
     # Streamlit UI
