@@ -62,12 +62,9 @@ def get_topics_from_fasTopic(comments_text):
 
 
 def comment_section_sentiment(comment_texts):
-    response = requests.post(API_URL, headers=headers, json=payload)
+    response = requests.post(API_URL, headers=headers, json=comment_texts)
     return response.json()
-    output = query({
-        "inputs": comment_texts,
-    })
-
+    
 def main():
     # Streamlit UI
     st.title("YouTube Comments Topic Analyzer")
