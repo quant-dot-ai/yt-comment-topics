@@ -59,8 +59,9 @@ def main():
     if st.button("Analyze Topics"):
         if video_id.strip():
             st.info("Fetching comments...")
-            st.dataframe(get_comments(video_id))
-            get_topics_from_fasTopic
+            comments_text=get_comments(video_id)
+            st.dataframe(comments_text)
+            get_topics_from_fasTopic(comments_text['text'].tolist())
 
 if __name__ == "main":
     main()
