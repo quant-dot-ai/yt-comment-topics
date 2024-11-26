@@ -42,9 +42,9 @@ def get_comments(video_id, next_page_token=None):
     
     # if "nextPageToken" in response:
     #     get_comments(video_id, response["nextPageToken"])
-
-    return df_with_n_relevant_comments=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
-
+    df_with_n_relevant_comments=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
+    
+    return df_with_n_relevant_comments
     # return df_with_n_relevant_comments
 
 
