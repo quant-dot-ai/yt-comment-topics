@@ -67,6 +67,8 @@ def comment_section_sentiment(comment_texts):
     
 def main():
     # Streamlit UI
+    print(token)
+    print(headers)
     st.title("YouTube Comments Topic Analyzer")
     st.subheader("Extract topics from YouTube comments using BERTopic")
     
