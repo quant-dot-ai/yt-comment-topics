@@ -3,7 +3,9 @@ import os
 import pandas as pd
 import googleapiclient.discovery
 
-api_key = os.getenv('YOUTUBE_API_KEY')
+# api_key = os.getenv('YOUTUBE_API_KEY')
+api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
+
 
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 
