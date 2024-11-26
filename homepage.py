@@ -9,8 +9,6 @@ from topmost.preprocessing import Preprocessing
 # Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
 
-# Variables
-# df_with_n_relevant_comments = []
 
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
@@ -39,31 +37,30 @@ def get_comments(video_id, next_page_token=None):
             comment["likeCount"],
             comment["textDisplay"]
         ])
-    
-    # if "nextPageToken" in response:
-    #     get_comments(video_id, response["nextPageToken"])
+        
     df=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
-    
-    return df
-    # return df_with_n_relevant_comments
-
-
-
-
-# Streamlit UI
-st.title("YouTube Comments Topic Analyzer")
-st.subheader("Extract topics from YouTube comments using BERTopic")
-
-# Input field for YouTube video ID
-video_id = st.text_input("Enter YouTube Video ID", "")
-
-if st.button("Analyze Topics"):
-    if video_id.strip():
-        st.info("Fetching comments...")
-        st.dataframe(get_comments(video_id))
-        
-        
+    return df     
 
 
 def get_topics_from_fasTopic(comments_text):
     preprocessing = Preprocessing(stopwords='English')
+    model = FASTopic(num_topics=5, preprocessing)
+    topic_top_words, doc_topic_dist = model.fit_transform(comments_text)
+    st.table(topic_top_words)
+
+def main():
+    # Streamlit UI
+    st.title("YouTube Comments Topic Analyzer")
+    st.subheader("Extract topics from YouTube comments using BERTopic")
+    
+    # Input field for YouTube video ID
+    video_id = st.text_input("Enter YouTube Video ID", "")
+    
+    if st.button("Analyze Topics"):
+        if video_id.strip():
+            st.info("Fetching comments...")
+            st.dataframe(get_comments(video_id))
+            get_topics_from_fasTopic
+
+if __name__ == "main":
+    main()
