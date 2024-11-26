@@ -6,6 +6,7 @@ import googleapiclient.discovery
 from fastopic import FASTopic
 from topmost.preprocessing import Preprocessing
 from collections import Counter
+from urllib.parse import urlparse, parse_qs
 
 # Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
@@ -18,6 +19,36 @@ headers = {"Authorization": f"Bearer {token}",
            "x-wait-for-model": "true"}
 
 
+
+def extract_video_id(youtube_url):
+    """
+    Extracts the video ID from a YouTube video URL.
+
+    Args:
+        youtube_url (str): The YouTube video URL.
+
+    Returns:
+        str: The video ID if found, or None if the URL is invalid.
+    """
+    try:
+        # Parse the URL
+        parsed_url = urlparse(youtube_url)
+
+        # Check if the URL is a valid YouTube link
+        if parsed_url.hostname in ['www.youtube.com', 'youtube.com']:
+            # Extract video ID from the 'v' query parameter
+            query_params = parse_qs(parsed_url.query)
+            return query_params.get('v', [None])[0]
+
+        elif parsed_url.hostname in ['youtu.be']:
+            # Extract video ID from the path for shortened URLs
+            return parsed_url.path[1:]
+
+        else:
+            return None
+    except Exception as e:
+        print(f"Error parsing YouTube URL: {e}")
+        return None
 
 def get_comments(video_id, next_page_token=None):
     comments = []
@@ -100,7 +131,8 @@ def main():
     st.subheader("Extract topics from YouTube comments using BERTopic")
     
     # Input field for YouTube video ID
-    video_id = st.text_input("Enter YouTube Video ID", "")
+    video_url = st.text_input("Enter YouTube URL", "")
+    video_id = extract_video_id(video_url)
     
     if st.button("Analyze Topics"):
         if video_id.strip():
