@@ -52,7 +52,7 @@ def get_topics_from_fasTopic(comments_text):
     st.table(topic_top_words)
 
     fig = model.visualize_topic(top_n=5)
-    st.pyplot(fig)
+    st.plotly_chart(fig)
 
 def main():
     # Streamlit UI
