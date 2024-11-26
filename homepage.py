@@ -3,11 +3,16 @@ import streamlit as st
 import os
 import pandas as pd
 import googleapiclient.discovery
+from fastopic import FASTopic
+from topmost.preprocessing import Preprocessing
 
-# api_key = os.getenv('YOUTUBE_API_KEY')
+# Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
 
+# Variables
+df_with_n_relevant_comments = []
 
+# Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 
 
@@ -38,8 +43,7 @@ def get_comments(video_id, next_page_token=None):
     # if "nextPageToken" in response:
     #     get_comments(video_id, response["nextPageToken"])
 
-    df_with_n_relevant_comments=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
-    st.dataframe(df_with_n_relevant_comments)
+    return df_with_n_relevant_comments=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
 
     # return df_with_n_relevant_comments
 
@@ -59,5 +63,8 @@ if st.button("Analyze Topics"):
         # comments = fetch_comments(video_id)
         get_comments(video_id)
         # st.dataframe(df_with_n_relevant_comments)
+        st.dataframe(df_with_n_relevant_comments)
 
-df_with_n_relevant_comments = []
+
+def get_topics_from_fasTopic(comments_text):
+    preprocessing = Preprocessing(stopwords='English')
