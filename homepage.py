@@ -79,7 +79,7 @@ def get_comments(video_id, next_page_token=None):
 
 def get_topics_from_fasTopic(comments_text):
     preprocessing = Preprocessing(stopwords='English')
-    model = FASTopic(num_topics=5, preprocessing=preprocessing)
+    model = FASTopic(num_topics=20, preprocessing=preprocessing)
     topic_top_words, doc_topic_dist = model.fit_transform(comments_text) # Needs to be fit_transform to get embeddings of the doc.
 
     # Display topic words in table form
