@@ -8,7 +8,7 @@ from topmost.preprocessing import Preprocessing
 
 # Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
-token = st.secrets["HUGGINGFACE_TOKEN]["token"]
+token = st.secrets["HUGGINGFACE_TOKEN"]["token"]
 
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
