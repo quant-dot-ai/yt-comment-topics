@@ -140,6 +140,7 @@ def main():
             comments_text=get_comments(video_id)
             st.dataframe(comments_text)
             st.subheader("Overall Sentiment:")
+            comment_section_sentiment(comments_text['text'].tolist())
             get_topics_from_fasTopic(comments_text['text'].tolist())
             
 
