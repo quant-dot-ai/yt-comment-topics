@@ -1,1 +1,1 @@
-googleapiclient
+google-api-python-client
