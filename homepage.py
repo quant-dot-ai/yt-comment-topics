@@ -8,10 +8,12 @@ from topmost.preprocessing import Preprocessing
 
 # Keys
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
-
+token = st.secrets["HUGGINGFACE_TOKEN]["token"]
 
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
+API_URL = "https://api-inference.huggingface.co/models/distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+headers = {"Authorization": "Bearer {token}"}
 
 
 
@@ -58,6 +60,14 @@ def get_topics_from_fasTopic(comments_text):
     fig_topic_wts = model.visualize_topic_weights(top_n=20, height=500)
     st.plotly_chart(fig_topic_wts)
 
+
+def comment_section_sentiment(comment_texts):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.json()
+    output = query({
+        "inputs": comment_texts,
+    })
+
 def main():
     # Streamlit UI
     st.title("YouTube Comments Topic Analyzer")
@@ -71,7 +81,10 @@ def main():
             st.info("Fetching comments...")
             comments_text=get_comments(video_id)
             st.dataframe(comments_text)
+            st.subhead("Overall Sentiment:")
+            comment_section_sentiment(comments_text['text'].tolist())
             get_topics_from_fasTopic(comments_text['text'].tolist())
+            
 
 if __name__ == "__main__":
     main()
