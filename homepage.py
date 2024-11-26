@@ -9,21 +9,7 @@ api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"]
 
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 
-# Streamlit UI
-st.title("YouTube Comments Topic Analyzer")
-st.subheader("Extract topics from YouTube comments using BERTopic")
 
-# Input field for YouTube video ID
-video_id = st.text_input("Enter YouTube Video ID", "")
-
-if st.button("Analyze Topics"):
-    if video_id.strip():
-        st.info("Fetching comments...")
-        # comments = fetch_comments(video_id)
-        get_comments(video_id)
-        # st.dataframe(df_with_n_relevant_comments)
-
-df_with_n_relevant_comments = []
 
 def get_comments(video_id, next_page_token=None):
     comments = []
@@ -55,3 +41,22 @@ def get_comments(video_id, next_page_token=None):
     st.dataframe(df_with_n_relevant_comments)
 
     # return df_with_n_relevant_comments
+
+
+
+
+# Streamlit UI
+st.title("YouTube Comments Topic Analyzer")
+st.subheader("Extract topics from YouTube comments using BERTopic")
+
+# Input field for YouTube video ID
+video_id = st.text_input("Enter YouTube Video ID", "")
+
+if st.button("Analyze Topics"):
+    if video_id.strip():
+        st.info("Fetching comments...")
+        # comments = fetch_comments(video_id)
+        get_comments(video_id)
+        # st.dataframe(df_with_n_relevant_comments)
+
+df_with_n_relevant_comments = []
