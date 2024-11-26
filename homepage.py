@@ -10,7 +10,7 @@ from topmost.preprocessing import Preprocessing
 api_key=st.secrets["api_keys"]["YOUTUBE_API_KEY"] 
 
 # Variables
-df_with_n_relevant_comments = []
+# df_with_n_relevant_comments = []
 
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
@@ -42,9 +42,9 @@ def get_comments(video_id, next_page_token=None):
     
     # if "nextPageToken" in response:
     #     get_comments(video_id, response["nextPageToken"])
-    df_with_n_relevant_comments=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
+    df=pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
     
-    return df_with_n_relevant_comments
+    return df
     # return df_with_n_relevant_comments
 
 
@@ -60,10 +60,9 @@ video_id = st.text_input("Enter YouTube Video ID", "")
 if st.button("Analyze Topics"):
     if video_id.strip():
         st.info("Fetching comments...")
-        # comments = fetch_comments(video_id)
-        get_comments(video_id)
-        # st.dataframe(df_with_n_relevant_comments)
-        st.dataframe(df_with_n_relevant_comments)
+        st.dataframe(get_comments(video_id))
+        
+        
 
 
 def get_topics_from_fasTopic(comments_text):
