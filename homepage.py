@@ -13,7 +13,7 @@ token = st.secrets["HUGGINGFACE_TOKEN"]["token"]
 # Objects
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 API_URL = "https://api-inference.huggingface.co/models/distilbert/distilbert-base-uncased-finetuned-sst-2-english"
-headers = {"Authorization": "Bearer {token}"}
+headers = {"Authorization": f"Bearer {token}"}
 
 
 
@@ -67,8 +67,6 @@ def comment_section_sentiment(comment_texts):
     
 def main():
     # Streamlit UI
-    print(token)
-    print(headers)
     st.title("YouTube Comments Topic Analyzer")
     st.subheader("Extract topics from YouTube comments using BERTopic")
     
