@@ -5,7 +5,7 @@ import googleapiclient.discovery
 
 api_key = os.getenv('YOUTUBE_API_KEY')
 
-# youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
+youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
 
 # Streamlit UI
 st.title("YouTube Comments Topic Analyzer")
