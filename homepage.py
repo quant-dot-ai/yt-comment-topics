@@ -96,38 +96,52 @@ def get_topics_from_fasTopic(comments_text):
 
 
 
-
-
 def comment_section_sentiment(comment_texts):
-    # Make API request to Hugging Face
-    response = requests.post(API_URL, headers=headers, json={"inputs": comment_texts})
-    
-    # Check if the response is successful
-    if response.status_code == 200:
-        sentiment_results = response.json()
+    try:
+        # Make API request to Hugging Face
+        response = requests.post(API_URL, headers=headers, json={"inputs": comment_texts})
 
-        if isinstance(sentiment_results, list):
-            # Count the occurrences of positive and negative sentiments
-            sentiment_counter = Counter()
+        # Check if the response is successful
+        if response.status_code == 200:
+            sentiment_results = response.json()
 
-            for sentiment in sentiment_results:
-                sentiment_label = sentiment[0]['label']
-                sentiment_counter[sentiment_label] += 1
+            if isinstance(sentiment_results, list) and all(isinstance(item, list) for item in sentiment_results):
+                # Count the occurrences of positive and negative sentiments
+                sentiment_counter = Counter()
 
-            # Calculate percentages
-            total_comments = sum(sentiment_counter.values())
-            positive_percentage = (sentiment_counter["POSITIVE"] / total_comments) * 100
-            negative_percentage = (sentiment_counter["NEGATIVE"] / total_comments) * 100
+                for sentiment in sentiment_results:
+                    if 'label' in sentiment[0]:
+                        sentiment_label = sentiment[0]['label']
+                        sentiment_counter[sentiment_label] += 1
+                    else:
+                        st.error("Response format is invalid: 'label' not found in response data.")
+                        return
 
-            # Display results in Streamlit
-            st.subheader("Overall Sentiment Analysis")
-            st.write(f"**Positive Sentiment:** {positive_percentage:.2f}%")
-            st.write(f"**Negative Sentiment:** {negative_percentage:.2f}%")
+                # Calculate percentages
+                total_comments = sum(sentiment_counter.values())
+                if total_comments == 0:
+                    st.error("No sentiments found. Please check if your input comments are valid.")
+                    return
+
+                positive_percentage = (sentiment_counter.get("POSITIVE", 0) / total_comments) * 100
+                negative_percentage = (sentiment_counter.get("NEGATIVE", 0) / total_comments) * 100
+
+                # Display results in Streamlit
+                st.subheader("Overall Sentiment Analysis")
+                st.write(f"**Positive Sentiment:** {positive_percentage:.2f}%")
+                st.write(f"**Negative Sentiment:** {negative_percentage:.2f}%")
+            else:
+                st.error(f"Unexpected response format. Expected a list, got: {type(sentiment_results)}.")
         else:
-            st.error("Failed to parse sentiment analysis response.")
-    else:
-        st.error("Failed to get sentiment analysis. Please check the API call or your API key.")
-    
+            st.error(f"Failed to get sentiment analysis. Status code: {response.status_code}. "
+                     f"Response: {response.text}. Please check the API call or your API key.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"An error occurred while making the API request: {e}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+
+
+
 def main():
     # Streamlit UI
     st.title("YouTube Comments Topic Analyzer")
