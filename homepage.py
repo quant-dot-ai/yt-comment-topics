@@ -36,7 +36,7 @@ def extract_video_id(youtube_url):
         parsed_url = urlparse(youtube_url)
 
         # Check if the URL is a valid YouTube link
-        if parsed_url.hostname in ['www.youtube.com', 'youtube.com']:
+        if parsed_url.hostname in ['www.youtube.com', 'youtube.com', 'm.youtube.com']:
             # Extract video ID from the 'v' query parameter
             query_params = parse_qs(parsed_url.query)
             return query_params.get('v', [None])[0]
