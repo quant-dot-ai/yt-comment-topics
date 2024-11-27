@@ -153,9 +153,9 @@ def main():
         if video_id.strip():
             st.info("Fetching comments...")
             comments_text=get_comments(video_id)
-            st.subheader("Top Comments (by relevance):")
+            st.subheader(f"Top 100 Comments (by relevance):")
             st.dataframe(comments_text[['text','like_count']])
-            st.subheader("Overall Sentiment:")
+            # st.subheader("Overall Sentiment:")
             comment_section_sentiment(comments_text['text'].tolist())
             get_topics_from_fasTopic(comments_text['text'].tolist())
             
