@@ -99,7 +99,7 @@ def get_topics_from_fasTopic(comments_text):
 def comment_section_sentiment(comment_texts):
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
     truncated_comments = [
-        tokenizer.convert_tokens_to_string(tokenizer.tokenize(comment)[:512])
+        tokenizer.convert_tokens_to_string(tokenizer.tokenize(comment)[:500])
         for comment in comment_texts
     ]
 
