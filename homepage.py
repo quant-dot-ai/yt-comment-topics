@@ -82,16 +82,19 @@ def get_topics_from_fasTopic(comments_text):
     model = FASTopic(num_topics=20, preprocessing=preprocessing)
     topic_top_words, doc_topic_dist = model.fit_transform(comments_text) # Needs to be fit_transform to get embeddings of the doc.
 
-    # Display topic words in table form
-    st.table(topic_top_words)
-
-    st.table(model.get_beta())
-
-    fig_topics = model.visualize_topic(top_n=5)
-    st.plotly_chart(fig_topics)
-
+    st.subheader("Topics and their weights")
     fig_topic_wts = model.visualize_topic_weights(top_n=20, height=500)
     st.plotly_chart(fig_topic_wts)
+    
+    # # Display topic words in table form
+    # st.table(topic_top_words)
+
+    # st.table(model.get_beta())
+    st.subheader("Topics and key words")
+    fig_topics = model.visualize_topic(top_n=10)
+    st.plotly_chart(fig_topics)
+
+
 
 
 
@@ -138,7 +141,8 @@ def main():
         if video_id.strip():
             st.info("Fetching comments...")
             comments_text=get_comments(video_id)
-            st.dataframe(comments_text)
+            st.subheader("Top Comments (by relevance):")
+            st.dataframe(comments_text[['text','like_count']])
             st.subheader("Overall Sentiment:")
             comment_section_sentiment(comments_text['text'].tolist())
             get_topics_from_fasTopic(comments_text['text'].tolist())
