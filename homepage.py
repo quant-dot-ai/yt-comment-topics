@@ -158,22 +158,45 @@ def display_topics(topics, comments_df):
                 st.write(f"Negative: {sentiment_counts['NEGATIVE']/total*100:.1f}%")
 
 def display_comments_table(comments_df):
-    """Display color-coded comments table"""
-    # Create a color map for clusters
-    n_clusters = len(comments_df['cluster'].unique())
-    colors = px.colors.qualitative.Set3[:n_clusters]
-    cluster_colors = {i: colors[i] for i in range(n_clusters)}
-    
+    """Display comments as interactive cards"""
     # Sort by likes
     sorted_df = comments_df.sort_values('like_count', ascending=False)
     
-    # Style the dataframe
-    def color_rows(row):
-        color = cluster_colors[row['cluster']]
-        return [f'background-color: {color}'] * len(row)
+    # Create color map for clusters
+    n_clusters = len(sorted_df['cluster'].unique())
+    colors = px.colors.qualitative.Set3[:n_clusters]
     
-    styled_df = sorted_df.style.apply(color_rows, axis=1)
-    st.dataframe(styled_df)
+    for _, row in sorted_df.iterrows():
+        with st.container():
+            col1, col2 = st.columns([6, 1])
+            with col1:
+                st.markdown(
+                    f"""
+                    <div style="
+                        padding: 1rem;
+                        border-radius: 10px;
+                        margin: 0.5rem 0;
+                        background-color: {colors[row['cluster']]}40;
+                        border-left: 5px solid {colors[row['cluster']]};
+                    ">
+                        {row['text']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            with col2:
+                st.markdown(
+                    f"""
+                    <div style="
+                        text-align: center;
+                        padding: 1rem;
+                        margin: 0.5rem 0;
+                    ">
+                        <span style="font-size: 1.2em; font-weight: bold;">👍 {row['like_count']}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
 def main():
     st.title("YouTube Comments Topic Analyzer")
