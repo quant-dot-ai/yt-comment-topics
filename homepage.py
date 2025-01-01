@@ -20,14 +20,34 @@ sentiment_analyzer = pipeline("sentiment-analysis", model="distilbert-base-uncas
 
 def extract_video_id(youtube_url):
     try:
+        # Handle mobile links, embed links, and shortened URLs
         parsed_url = urlparse(youtube_url)
+        
+        # Standard YouTube URLs
         if parsed_url.hostname in ['www.youtube.com', 'youtube.com', 'm.youtube.com']:
-            query_params = parse_qs(parsed_url.query)
-            return query_params.get('v', [None])[0]
+            # Handle watch URLs
+            if 'watch' in parsed_url.path:
+                return parse_qs(parsed_url.query).get('v', [None])[0]
+            # Handle embed URLs
+            elif 'embed' in parsed_url.path:
+                return parsed_url.path.split('/')[-1]
+            # Handle shortened URLs
+            elif 'youtu.be' in parsed_url.path:
+                return parsed_url.path.split('/')[-1]
+                
+        # Handle youtu.be URLs
         elif parsed_url.hostname in ['youtu.be']:
             return parsed_url.path[1:]
-        else:
-            return None
+            
+        # Handle YouTube mobile app URLs
+        elif parsed_url.hostname in ['m.youtube.com']:
+            return parse_qs(parsed_url.query).get('v', [None])[0]
+            
+        # Handle YouTube shorts
+        elif '/shorts/' in parsed_url.path:
+            return parsed_url.path.split('/shorts/')[-1]
+            
+        return None
     except Exception as e:
         print(f"Error parsing YouTube URL: {e}")
         return None
@@ -68,9 +88,12 @@ def get_topic_title(terms, comments_df, cluster_id):
     4. {top_comments[3] if len(top_comments) > 3 else ''}
     5. {top_comments[4] if len(top_comments) > 4 else ''}
     
-    Write a natural, human-readable sentence (minimum 8 words) that explains what these commenters are discussing.
-    Use active voice. Be specific about the video context.
-    Must be a complete, grammatical sentence that captures the main theme, not just keywords.
+    Write a descriptive, human-readable statement that summarizes these comments in 10-15 words.
+    Requirements:
+    - Must be a complete, grammatical sentence
+    - Be specific and descriptive about what is being discussed
+    - Capture the emotional tone if present (e.g., excitement, nostalgia, criticism)
+    - Avoid generic phrases like "Viewers discuss" or "Comments about"
     Response should be just the sentence, nothing else."""
     
     try:
