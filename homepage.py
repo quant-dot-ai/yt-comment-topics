@@ -202,7 +202,7 @@ def get_cluster_summary(comments_df, cluster_id):
     - Main themes or arguments
     - Shared viewpoints
     - Key reactions or responses
-    Must be a complete sentence. Avoid meta-language like 'these comments discuss'."""
+    Must be a complete sentence. DO NOT USE meta-language like 'these comments discuss'."""
     
     try:
         response = openai.chat.completions.create(
@@ -240,7 +240,7 @@ def display_topics(topics, comments_df):
 
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
-    sorted_df = comments_df.sort_values('like_count', ascending=False)
+    sorted_df = comments_df.sort_values('like_count', ascending=False).head(20)
     n_clusters = len(sorted_df['cluster'].unique())
     colors = px.colors.qualitative.Set3[:n_clusters]
     
