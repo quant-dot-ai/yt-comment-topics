@@ -57,19 +57,29 @@ def get_comments(video_id, next_page_token=None):
     return pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
 
 def get_topic_title(terms, comments_df, cluster_id):
-    """Generate meaningful topic title using most-liked comments"""
+    """Generate descriptive topic summary using top comments"""
     cluster_comments = comments_df[comments_df['cluster'] == cluster_id]
     top_comments = cluster_comments.nlargest(3, 'like_count')['text'].tolist()
     
-    prompt = f"""Given these popular comments from a cluster:
-    1. {top_comments[0][:200]}
-    2. {top_comments[1][:200] if len(top_comments) > 1 else ''}
-    3. {top_comments[2][:200] if len(top_comments) > 2 else ''}
+    prompt = f"""Here are the top 3 most-liked comments from a cluster:
+    1. {top_comments[0]}
+    2. {top_comments[1] if len(top_comments) > 1 else ''}
+    3. {top_comments[2] if len(top_comments) > 2 else ''}
     
-    And these key terms: {', '.join(terms)}
+    Write a single clear sentence (max 10-12 words) that captures the main discussion topic.
+    Be specific and natural. Use active voice. Avoid starting with 'Comments about' or 'Discussion of'.
+    Response should be just the sentence, nothing else."""
     
-    Generate a short (2-4 words) meaningful title that captures what these comments are discussing.
-    Use natural language, avoid technical terms. Response should be just the title, nothing else."""
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=30,
+            temperature=0.3
+        )
+        return response.choices[0].message.content.strip()
+    except:
+        return f"Cluster {cluster_id + 1}"
     
     try:
         response = openai.ChatCompletion.create(
@@ -133,7 +143,6 @@ def extract_topics_llm(comments_df, num_clusters=5):
 
 def visualize_clusters(comments_df, topics):
     """Create user-friendly cluster visualization"""
-    # Create clean topic titles for the legend
     cluster_titles = {topic['cluster_id']: topic['title'].strip('Topic ()') for topic in topics}
     comments_df['topic'] = comments_df['cluster'].map(cluster_titles)
     
@@ -147,13 +156,27 @@ def visualize_clusters(comments_df, topics):
         color_discrete_sequence=px.colors.qualitative.Set3
     )
     
-    # Remove axis ticks and labels
+    # Add cluster density contours
+    for cluster in comments_df['cluster'].unique():
+        cluster_data = comments_df[comments_df['cluster'] == cluster]
+        fig.add_trace(
+            px.density_contour(
+                cluster_data, x='x', y='y',
+                opacity=0.15,
+                line_width=0,
+                color_discrete_sequence=[px.colors.qualitative.Set3[cluster]]
+            ).data[0]
+        )
+    
     fig.update_xaxes(showticklabels=False, showgrid=False)
     fig.update_yaxes(showticklabels=False, showgrid=False)
-    
-    # Customize hover template
     fig.update_traces(
         hovertemplate="<b>Comment:</b> %{customdata[0]}<extra></extra>"
+    )
+    fig.update_layout(
+        plot_bgcolor='rgba(255,255,255,0.1)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color='white'
     )
     
     st.plotly_chart(fig)
