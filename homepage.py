@@ -1,23 +1,24 @@
 import requests
 import streamlit as st
 import pandas as pd
+import numpy as np
 import googleapiclient.discovery
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from collections import Counter
 from urllib.parse import urlparse, parse_qs
-import numpy as np
 from transformers import pipeline
+import plotly.express as px
+from sklearn.decomposition import PCA
+import openai
 
-# Keys and setup remain the same
+# Keys and setup
 api_key = st.secrets["api_keys"]["YOUTUBE_API_KEY"]
+openai.api_key = st.secrets["api_keys"]["OPENAI_API_KEY"]
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
-
-# Add sentiment analyzer
 sentiment_analyzer = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 def extract_video_id(youtube_url):
-    # Your existing extract_video_id function remains the same
     try:
         parsed_url = urlparse(youtube_url)
         if parsed_url.hostname in ['www.youtube.com', 'youtube.com', 'm.youtube.com']:
@@ -32,7 +33,6 @@ def extract_video_id(youtube_url):
         return None
 
 def get_comments(video_id, next_page_token=None):
-    # Your existing get_comments function remains the same
     comments = []
     request = youtube.commentThreads().list(
         part="snippet",
@@ -56,9 +56,26 @@ def get_comments(video_id, next_page_token=None):
         
     return pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
 
+def get_topic_title(terms, comment):
+    """Generate a topic title using OpenAI"""
+    prompt = f"""Given these key terms: {', '.join(terms)}
+    And this example comment: "{comment[:200]}..."
+    Generate a short (3-5 words) descriptive title for this topic.
+    Response should be just the title, nothing else."""
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=10,
+            temperature=0.3
+        )
+        return response.choices[0].message.content.strip()
+    except:
+        return f"Topic ({', '.join(terms[:2])})"
+
 def extract_topics_llm(comments_df, num_clusters=5):
     """Extract topics using LLM and clustering"""
-    # Step 1: Convert comments to TF-IDF vectors
     vectorizer = TfidfVectorizer(
         max_features=1000,
         stop_words='english',
@@ -67,58 +84,96 @@ def extract_topics_llm(comments_df, num_clusters=5):
     )
     tfidf_matrix = vectorizer.fit_transform(comments_df['text'])
     
-    # Step 2: Perform clustering
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     cluster_labels = kmeans.fit_predict(tfidf_matrix)
     
-    # Step 3: Get representative comments for each cluster
+    # Get PCA for visualization
+    pca = PCA(n_components=2)
+    coords = pca.fit_transform(tfidf_matrix.toarray())
+    
     comments_df['cluster'] = cluster_labels
+    comments_df['x'] = coords[:, 0]
+    comments_df['y'] = coords[:, 1]
+    
     cluster_centers = kmeans.cluster_centers_
     
     topics = []
     for i in range(num_clusters):
-        # Get top terms for cluster
         cluster_center = cluster_centers[i]
-        top_terms_idx = np.argsort(cluster_center)[-5:]  # Get top 5 terms
+        top_terms_idx = np.argsort(cluster_center)[-5:]
         top_terms = [vectorizer.get_feature_names_out()[idx] for idx in top_terms_idx]
         
-        # Get representative comment (closest to cluster center)
         cluster_comments = comments_df[comments_df['cluster'] == i]
         if len(cluster_comments) > 0:
-            # Get comment closest to cluster center
             cluster_vectors = vectorizer.transform(cluster_comments['text'])
             distances = np.sqrt(np.sum((cluster_vectors.toarray() - cluster_center) ** 2, axis=1))
             representative_idx = distances.argmin()
             representative_comment = cluster_comments.iloc[representative_idx]['text']
             
+            # Generate topic title
+            topic_title = get_topic_title(top_terms, representative_comment)
+            
             topics.append({
                 'cluster_id': i,
+                'title': topic_title,
                 'size': len(cluster_comments),
                 'top_terms': top_terms,
                 'representative_comment': representative_comment
             })
     
-    return topics, cluster_labels
+    return topics, cluster_labels, comments_df
+
+def visualize_clusters(comments_df):
+    """Create interactive cluster visualization"""
+    fig = px.scatter(
+        comments_df,
+        x='x', y='y',
+        color='cluster',
+        hover_data=['text'],
+        title='Comment Clusters Visualization',
+        labels={'x': 'Component 1', 'y': 'Component 2'},
+        color_continuous_scale='viridis'
+    )
+    st.plotly_chart(fig)
 
 def display_topics(topics, comments_df):
     """Display topics and their analysis"""
     st.subheader("Comment Topics Analysis")
     
     for topic in topics:
-        with st.expander(f"Topic {topic['cluster_id']+1} ({topic['size']} comments)"):
+        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
             st.write("**Key Terms:**", ", ".join(topic['top_terms']))
             st.write("**Representative Comment:**")
             st.write(topic['representative_comment'])
             
-            # Get sentiment for cluster
             cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
-            sentiments = sentiment_analyzer(cluster_comments['text'].tolist()[:50])  # Analyze up to 50 comments
+            sentiments = sentiment_analyzer(cluster_comments['text'].tolist()[:50])
             sentiment_counts = Counter(s['label'] for s in sentiments)
             total = sum(sentiment_counts.values())
             
-            st.write("**Sentiment Analysis:**")
-            st.write(f"Positive: {sentiment_counts['POSITIVE']/total*100:.1f}%")
-            st.write(f"Negative: {sentiment_counts['NEGATIVE']/total*100:.1f}%")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Sentiment Analysis:**")
+                st.write(f"Positive: {sentiment_counts['POSITIVE']/total*100:.1f}%")
+                st.write(f"Negative: {sentiment_counts['NEGATIVE']/total*100:.1f}%")
+
+def display_comments_table(comments_df):
+    """Display color-coded comments table"""
+    # Create a color map for clusters
+    n_clusters = len(comments_df['cluster'].unique())
+    colors = px.colors.qualitative.Set3[:n_clusters]
+    cluster_colors = {i: colors[i] for i in range(n_clusters)}
+    
+    # Sort by likes
+    sorted_df = comments_df.sort_values('like_count', ascending=False)
+    
+    # Style the dataframe
+    def color_rows(row):
+        color = cluster_colors[row['cluster']]
+        return [f'background-color: {color}'] * len(row)
+    
+    styled_df = sorted_df.style.apply(color_rows, axis=1)
+    st.dataframe(styled_df)
 
 def main():
     st.title("YouTube Comments Topic Analyzer")
@@ -132,13 +187,17 @@ def main():
         if video_id:
             with st.spinner("Fetching and analyzing comments..."):
                 comments_df = get_comments(video_id)
-                topics, cluster_labels = extract_topics_llm(comments_df, num_clusters)
+                topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
+                
+                # Display cluster visualization
+                visualize_clusters(comments_df)
+                
+                # Display topics
                 display_topics(topics, comments_df)
                 
-                # Display clustered comments
-                comments_df['cluster'] = cluster_labels
-                st.subheader("Clustered Comments")
-                st.dataframe(comments_df[['text', 'cluster', 'like_count']])
+                # Display color-coded comments table
+                st.subheader("Comments by Popularity")
+                display_comments_table(comments_df[['text', 'cluster', 'like_count']])
 
 if __name__ == "__main__":
     main()
