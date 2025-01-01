@@ -56,12 +56,20 @@ def get_comments(video_id, next_page_token=None):
         
     return pd.DataFrame(comments, columns=["author", "published_at", "updated_at", "like_count", "text"])
 
-def get_topic_title(terms, comment):
-    """Generate a topic title using OpenAI"""
-    prompt = f"""Given these key terms: {', '.join(terms)}
-    And this example comment: "{comment[:200]}..."
-    Generate a short (3-5 words) descriptive title for this topic.
-    Response should be just the title, nothing else."""
+def get_topic_title(terms, comments_df, cluster_id):
+    """Generate meaningful topic title using most-liked comments"""
+    cluster_comments = comments_df[comments_df['cluster'] == cluster_id]
+    top_comments = cluster_comments.nlargest(3, 'like_count')['text'].tolist()
+    
+    prompt = f"""Given these popular comments from a cluster:
+    1. {top_comments[0][:200]}
+    2. {top_comments[1][:200] if len(top_comments) > 1 else ''}
+    3. {top_comments[2][:200] if len(top_comments) > 2 else ''}
+    
+    And these key terms: {', '.join(terms)}
+    
+    Generate a short (2-4 words) meaningful title that captures what these comments are discussing.
+    Use natural language, avoid technical terms. Response should be just the title, nothing else."""
     
     try:
         response = openai.ChatCompletion.create(
@@ -111,7 +119,7 @@ def extract_topics_llm(comments_df, num_clusters=5):
             representative_comment = cluster_comments.iloc[representative_idx]['text']
             
             # Generate topic title
-            topic_title = get_topic_title(top_terms, representative_comment)
+            topic_title = get_topic_title(top_terms, comments_df, i)
             
             topics.append({
                 'cluster_id': i,
@@ -125,10 +133,8 @@ def extract_topics_llm(comments_df, num_clusters=5):
 
 def visualize_clusters(comments_df, topics):
     """Create user-friendly cluster visualization"""
-    # Create a mapping of cluster IDs to topic titles
-    cluster_titles = {topic['cluster_id']: topic['title'] for topic in topics}
-    
-    # Add topic titles to the dataframe
+    # Create clean topic titles for the legend
+    cluster_titles = {topic['cluster_id']: topic['title'].strip('Topic ()') for topic in topics}
     comments_df['topic'] = comments_df['cluster'].map(cluster_titles)
     
     fig = px.scatter(
