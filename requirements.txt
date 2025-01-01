@@ -3,3 +3,4 @@ fastopic
 topmost
 matplotlib
 transformers
+openai
