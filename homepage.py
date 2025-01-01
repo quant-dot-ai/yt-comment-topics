@@ -80,17 +80,6 @@ def get_topic_title(terms, comments_df, cluster_id):
         return response.choices[0].message.content.strip()
     except:
         return f"Cluster {cluster_id + 1}"
-    
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=10,
-            temperature=0.3
-        )
-        return response.choices[0].message.content.strip()
-    except:
-        return f"Topic ({', '.join(terms[:2])})"
 
 def extract_topics_llm(comments_df, num_clusters=5):
     """Extract topics using LLM and clustering"""
@@ -105,7 +94,6 @@ def extract_topics_llm(comments_df, num_clusters=5):
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     cluster_labels = kmeans.fit_predict(tfidf_matrix)
     
-    # Get PCA for visualization
     pca = PCA(n_components=2)
     coords = pca.fit_transform(tfidf_matrix.toarray())
     
@@ -128,7 +116,6 @@ def extract_topics_llm(comments_df, num_clusters=5):
             representative_idx = distances.argmin()
             representative_comment = cluster_comments.iloc[representative_idx]['text']
             
-            # Generate topic title
             topic_title = get_topic_title(top_terms, comments_df, i)
             
             topics.append({
@@ -156,18 +143,6 @@ def visualize_clusters(comments_df, topics):
         color_discrete_sequence=px.colors.qualitative.Set3
     )
     
-    # Add cluster density contours
-    for cluster in comments_df['cluster'].unique():
-        cluster_data = comments_df[comments_df['cluster'] == cluster]
-        fig.add_trace(
-            px.density_contour(
-                cluster_data, x='x', y='y',
-                opacity=0.15,
-                line_width=0,
-                color_discrete_sequence=[px.colors.qualitative.Set3[cluster]]
-            ).data[0]
-        )
-    
     fig.update_xaxes(showticklabels=False, showgrid=False)
     fig.update_yaxes(showticklabels=False, showgrid=False)
     fig.update_traces(
@@ -181,33 +156,9 @@ def visualize_clusters(comments_df, topics):
     
     st.plotly_chart(fig)
 
-def display_topics(topics, comments_df):
-    """Display topics and their analysis"""
-    st.subheader("Comment Topics Analysis")
-    
-    for topic in topics:
-        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
-            st.write("**Key Terms:**", ", ".join(topic['top_terms']))
-            st.write("**Representative Comment:**")
-            st.write(topic['representative_comment'])
-            
-            cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
-            sentiments = sentiment_analyzer(cluster_comments['text'].tolist()[:50])
-            sentiment_counts = Counter(s['label'] for s in sentiments)
-            total = sum(sentiment_counts.values())
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.write("**Sentiment Analysis:**")
-                st.write(f"Positive: {sentiment_counts['POSITIVE']/total*100:.1f}%")
-                st.write(f"Negative: {sentiment_counts['NEGATIVE']/total*100:.1f}%")
-
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
-    # Sort by likes
     sorted_df = comments_df.sort_values('like_count', ascending=False)
-    
-    # Create color map for clusters
     n_clusters = len(sorted_df['cluster'].unique())
     colors = px.colors.qualitative.Set3[:n_clusters]
     
@@ -257,13 +208,9 @@ def main():
                 comments_df = get_comments(video_id)
                 topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
                 
-                # Display cluster visualization
                 visualize_clusters(comments_df, topics)
-                
-                # Display topics
                 display_topics(topics, comments_df)
                 
-                # Display color-coded comments table
                 st.subheader("Comments by Popularity")
                 display_comments_table(comments_df[['text', 'cluster', 'like_count']])
 
