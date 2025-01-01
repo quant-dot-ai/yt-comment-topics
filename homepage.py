@@ -205,7 +205,7 @@ def get_cluster_summary(comments_df, cluster_id):
     Must be a complete sentence. Avoid meta-language like 'these comments discuss'."""
     
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=50,
@@ -214,9 +214,7 @@ def get_cluster_summary(comments_df, cluster_id):
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"OpenAI API Error: {str(e)}")
-        if hasattr(e, 'response'):
-            print(f"Response status: {e.response.status_code}")
-            print(f"Response body: {e.response.text}")
+        print(f"Error type: {type(e)}")
         return f"Summary error: {str(e)[:100]}"
 
 def display_topics(topics, comments_df):
