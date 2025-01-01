@@ -190,39 +190,51 @@ def visualize_clusters(comments_df, topics):
     
     st.plotly_chart(fig)
 
+def get_cluster_summary(comments_df, cluster_id):
+    """Generate a summary of the cluster's key discussion points"""
+    cluster_comments = comments_df[comments_df['cluster'] == cluster_id]
+    top_comments = cluster_comments.nlargest(5, 'like_count')['text'].tolist()
+    
+    prompt = f"""Here are the top 5 liked comments from a YouTube video cluster:
+    {top_comments}
+    
+    Write a brief summary (15-20 words) of what these comments discuss. Focus on:
+    - Main themes or arguments
+    - Shared viewpoints
+    - Key reactions or responses
+    Must be a complete sentence. Avoid meta-language like 'these comments discuss'."""
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.3
+        )
+        return response.choices[0].message.content.strip()
+    except:
+        return "Error generating summary"
+
 def display_topics(topics, comments_df):
-    """Display topic insights with descriptive headers"""
+    """Display topic insights with summaries"""
     for topic in topics:
         cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
+        cluster_summary = get_cluster_summary(comments_df, topic['cluster_id'])
         
-        # Get sentiment distribution
-        sentiments = [
-            sentiment_analyzer(text)[0] 
-            for text in cluster_comments['text'].sample(min(20, len(cluster_comments)))
-        ]
-        sentiment_dist = Counter(s['label'] for s in sentiments)
-        main_sentiment = max(sentiment_dist.items(), key=lambda x: x[1])[0]
-        
-        # Format header with size and sentiment
-        sentiment_emoji = "❤️" if main_sentiment == "POSITIVE" else "💔" if main_sentiment == "NEGATIVE" else "💭"
-        header = f"{sentiment_emoji} {topic['title']} • {topic['size']} comments • Mostly {main_sentiment.lower()} sentiment"
+        header = f"{cluster_summary} • {topic['size']} comments"
         
         with st.expander(header):
-            col1, col2 = st.columns([1, 1])
+            st.markdown("**Engagement Stats:**")
+            st.write(f"Average likes: {cluster_comments['like_count'].mean():.1f}")
+            st.write(f"Highest likes: {cluster_comments['like_count'].max()}")
             
-            with col1:
-                st.markdown("**Cluster Metrics:**")
-                st.write(f"• Average likes: {cluster_comments['like_count'].mean():.1f}")
-                st.write(f"• Max likes: {cluster_comments['like_count'].max()}")
-                
-            with col2:
-                st.markdown("**Representative Comment:**")
-                st.markdown(
-                    f"""<div style="padding: 0.5rem; border-left: 3px solid #ccc; margin: 0.5rem 0; font-style: italic;">
-                        {topic['representative_comment']}
-                    </div>""",
-                    unsafe_allow_html=True
-                )
+            st.markdown("**Representative Comment:**")
+            st.markdown(
+                f"""<div style="padding: 0.5rem; border-left: 3px solid #ccc; font-style: italic;">
+                    {topic['representative_comment']}
+                </div>""",
+                unsafe_allow_html=True
+            )
 
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
