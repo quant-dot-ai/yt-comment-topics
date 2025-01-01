@@ -123,17 +123,33 @@ def extract_topics_llm(comments_df, num_clusters=5):
     
     return topics, cluster_labels, comments_df
 
-def visualize_clusters(comments_df):
-    """Create interactive cluster visualization"""
+def visualize_clusters(comments_df, topics):
+    """Create user-friendly cluster visualization"""
+    # Create a mapping of cluster IDs to topic titles
+    cluster_titles = {topic['cluster_id']: topic['title'] for topic in topics}
+    
+    # Add topic titles to the dataframe
+    comments_df['topic'] = comments_df['cluster'].map(cluster_titles)
+    
     fig = px.scatter(
         comments_df,
         x='x', y='y',
-        color='cluster',
+        color='topic',
         hover_data=['text'],
-        title='Comment Clusters Visualization',
-        labels={'x': 'Component 1', 'y': 'Component 2'},
-        color_continuous_scale='viridis'
+        title='Comments Grouped by Topic',
+        labels={'x': '', 'y': ''},
+        color_discrete_sequence=px.colors.qualitative.Set3
     )
+    
+    # Remove axis ticks and labels
+    fig.update_xaxes(showticklabels=False, showgrid=False)
+    fig.update_yaxes(showticklabels=False, showgrid=False)
+    
+    # Customize hover template
+    fig.update_traces(
+        hovertemplate="<b>Comment:</b> %{customdata[0]}<extra></extra>"
+    )
+    
     st.plotly_chart(fig)
 
 def display_topics(topics, comments_df):
@@ -213,7 +229,7 @@ def main():
                 topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
                 
                 # Display cluster visualization
-                visualize_clusters(comments_df)
+                visualize_clusters(comments_df, topics)
                 
                 # Display topics
                 display_topics(topics, comments_df)
