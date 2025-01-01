@@ -194,6 +194,34 @@ def display_comments_table(comments_df):
                     unsafe_allow_html=True
                 )
 
+def display_topics(topics, comments_df):
+    """Display topic summaries with representative comments"""
+    for topic in topics:
+        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
+            st.markdown(f"**Key Terms:** {', '.join(topic['top_terms'])}")
+            
+            cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
+            top_comments = cluster_comments.nlargest(3, 'like_count')
+            
+            st.markdown("**Top Comments:**")
+            for _, comment in top_comments.iterrows():
+                st.markdown(
+                    f"""
+                    <div style="
+                        padding: 0.5rem;
+                        border-left: 3px solid #ccc;
+                        margin: 0.5rem 0;
+                    ">
+                        {comment['text']}
+                        <div style="text-align: right; color: #666;">
+                            👍 {comment['like_count']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
 def main():
     st.title("YouTube Comments Topic Analyzer")
     st.subheader("Extract topics from YouTube comments using LLM and Clustering")
