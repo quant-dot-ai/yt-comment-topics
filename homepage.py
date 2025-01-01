@@ -209,7 +209,7 @@ def get_cluster_summary(comments_df, cluster_id):
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=50,
-            temperature=0.3
+            temperature=0.2
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -223,7 +223,7 @@ def display_topics(topics, comments_df):
         cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
         cluster_summary = get_cluster_summary(comments_df, topic['cluster_id'])
         
-        header = f"{cluster_summary} • {topic['size']} comments"
+        header = f"{topic['size']} comments | {cluster_summary} "
         
         with st.expander(header):
             st.markdown("**Engagement Stats:**")
