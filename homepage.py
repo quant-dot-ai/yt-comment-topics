@@ -49,7 +49,7 @@ def get_comments(video_id, next_page_token=None):
         comments.append([
             comment["authorDisplayName"],
             comment["publishedAt"],
-            comment["updated_at"],
+            comment.get("updatedAt", comment["publishedAt"]),
             comment["likeCount"],
             comment["textDisplay"]
         ])
