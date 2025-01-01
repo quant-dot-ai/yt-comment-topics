@@ -240,7 +240,7 @@ def display_topics(topics, comments_df):
 
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
-    sorted_df = comments_df.sort_values('like_count', ascending=False).head(20)
+    sorted_df = comments_df.sort_values('like_count', ascending=False)
     n_clusters = len(sorted_df['cluster'].unique())
     colors = px.colors.qualitative.Set3[:n_clusters]
     
@@ -293,8 +293,8 @@ def main():
                 visualize_clusters(comments_df, topics)
                 display_topics(topics, comments_df)
                 
-                st.subheader("Comments by Popularity")
-                display_comments_table(comments_df[['text', 'cluster', 'like_count']])
+                # st.subheader("Comments by Popularity")
+                # display_comments_table(comments_df[['text', 'cluster', 'like_count']])
 
 if __name__ == "__main__":
     main()
