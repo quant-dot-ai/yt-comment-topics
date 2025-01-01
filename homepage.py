@@ -212,8 +212,12 @@ def get_cluster_summary(comments_df, cluster_id):
             temperature=0.3
         )
         return response.choices[0].message.content.strip()
-    except:
-        return "Error generating summary"
+    except Exception as e:
+        print(f"OpenAI API Error: {str(e)}")
+        if hasattr(e, 'response'):
+            print(f"Response status: {e.response.status_code}")
+            print(f"Response body: {e.response.text}")
+        return f"Summary error: {str(e)[:100]}"
 
 def display_topics(topics, comments_df):
     """Display topic insights with summaries"""
