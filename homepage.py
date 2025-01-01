@@ -191,29 +191,51 @@ def visualize_clusters(comments_df, topics):
     st.plotly_chart(fig)
 
 def display_topics(topics, comments_df):
-    """Display topic summaries with representative comments"""
+    """Display topic insights without repeating comments"""
     for topic in topics:
-        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
-            cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
-            top_comments = cluster_comments.nlargest(3, 'like_count')
+        cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
+        
+        # Get sentiment distribution
+        sentiments = [
+            sentiment_analyzer(text)[0] 
+            for text in cluster_comments['text'].sample(min(20, len(cluster_comments)))
+        ]
+        sentiment_dist = Counter(s['label'] for s in sentiments)
+        main_sentiment = max(sentiment_dist.items(), key=lambda x: x[1])[0]
+        sentiment_ratio = sentiment_dist[main_sentiment] / sum(sentiment_dist.values())
+        
+        # Get engagement metrics
+        avg_likes = cluster_comments['like_count'].mean()
+        max_likes = cluster_comments['like_count'].max()
+        
+        with st.expander(f"📌 {topic['title']}"):
+            col1, col2 = st.columns([1, 1])
             
-            st.markdown("**Top Comments:**")
-            for _, comment in top_comments.iterrows():
-                st.markdown(
-                    f"""
-                    <div style="
-                        padding: 0.5rem;
-                        border-left: 3px solid #ccc;
-                        margin: 0.5rem 0;
-                    ">
-                        {comment['text']}
-                        <div style="text-align: right; color: #666;">
-                            👍 {comment['like_count']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            with col1:
+                st.markdown("**Cluster Insights:**")
+                st.write(f"• Size: {topic['size']} comments")
+                st.write(f"• Average likes: {avg_likes:.1f}")
+                st.write(f"• Highest likes: {max_likes}")
+                
+            with col2:
+                st.markdown("**Sentiment Analysis:**")
+                st.write(f"• Dominant sentiment: {main_sentiment.title()}")
+                st.write(f"• Confidence: {sentiment_ratio*100:.1f}%")
+                
+            st.markdown("**Most Representative Comment:**")
+            st.markdown(
+                f"""
+                <div style="
+                    padding: 0.5rem;
+                    border-left: 3px solid #ccc;
+                    margin: 0.5rem 0;
+                    font-style: italic;
+                ">
+                    {topic['representative_comment']}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
