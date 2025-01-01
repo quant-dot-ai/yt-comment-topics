@@ -49,7 +49,7 @@ def get_comments(video_id, next_page_token=None):
         comments.append([
             comment["authorDisplayName"],
             comment["publishedAt"],
-            comment["updatedAt"],
+            comment["updated_at"],
             comment["likeCount"],
             comment["textDisplay"]
         ])
@@ -59,22 +59,25 @@ def get_comments(video_id, next_page_token=None):
 def get_topic_title(terms, comments_df, cluster_id):
     """Generate descriptive topic summary using top comments"""
     cluster_comments = comments_df[comments_df['cluster'] == cluster_id]
-    top_comments = cluster_comments.nlargest(3, 'like_count')['text'].tolist()
+    top_comments = cluster_comments.nlargest(5, 'like_count')['text'].tolist()
     
-    prompt = f"""Here are the top 3 most-liked comments from a cluster:
+    prompt = f"""Here are the top 5 most-liked comments from a cluster of YouTube comments:
     1. {top_comments[0]}
     2. {top_comments[1] if len(top_comments) > 1 else ''}
     3. {top_comments[2] if len(top_comments) > 2 else ''}
+    4. {top_comments[3] if len(top_comments) > 3 else ''}
+    5. {top_comments[4] if len(top_comments) > 4 else ''}
     
-    Write a single clear sentence (max 10-12 words) that captures the main discussion topic.
-    Be specific and natural. Use active voice. Avoid starting with 'Comments about' or 'Discussion of'.
+    Write a natural, human-readable sentence (minimum 8 words) that explains what these commenters are discussing.
+    Use active voice. Be specific about the video context.
+    Must be a complete, grammatical sentence that captures the main theme, not just keywords.
     Response should be just the sentence, nothing else."""
     
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=30,
+            max_tokens=50,
             temperature=0.3
         )
         return response.choices[0].message.content.strip()
@@ -130,8 +133,16 @@ def extract_topics_llm(comments_df, num_clusters=5):
 
 def visualize_clusters(comments_df, topics):
     """Create user-friendly cluster visualization"""
-    cluster_titles = {topic['cluster_id']: topic['title'].strip('Topic ()') for topic in topics}
+    cluster_titles = {topic['cluster_id']: topic['title'] for topic in topics}
     comments_df['topic'] = comments_df['cluster'].map(cluster_titles)
+    
+    st.markdown("""
+    ### Understanding the Topic Clusters
+    
+    This graph shows how comments are grouped into topics. Each dot represents a comment, 
+    and dots of the same color belong to the same topic. Comments that discuss similar things 
+    appear closer together on the graph. Hover over any dot to read the full comment.
+    """)
     
     fig = px.scatter(
         comments_df,
@@ -155,6 +166,31 @@ def visualize_clusters(comments_df, topics):
     )
     
     st.plotly_chart(fig)
+
+def display_topics(topics, comments_df):
+    """Display topic summaries with representative comments"""
+    for topic in topics:
+        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
+            cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
+            top_comments = cluster_comments.nlargest(3, 'like_count')
+            
+            st.markdown("**Top Comments:**")
+            for _, comment in top_comments.iterrows():
+                st.markdown(
+                    f"""
+                    <div style="
+                        padding: 0.5rem;
+                        border-left: 3px solid #ccc;
+                        margin: 0.5rem 0;
+                    ">
+                        {comment['text']}
+                        <div style="text-align: right; color: #666;">
+                            👍 {comment['like_count']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
 def display_comments_table(comments_df):
     """Display comments as interactive cards"""
@@ -193,34 +229,6 @@ def display_comments_table(comments_df):
                     """,
                     unsafe_allow_html=True
                 )
-
-def display_topics(topics, comments_df):
-    """Display topic summaries with representative comments"""
-    for topic in topics:
-        with st.expander(f"{topic['title']} ({topic['size']} comments)"):
-            st.markdown(f"**Key Terms:** {', '.join(topic['top_terms'])}")
-            
-            cluster_comments = comments_df[comments_df['cluster'] == topic['cluster_id']]
-            top_comments = cluster_comments.nlargest(3, 'like_count')
-            
-            st.markdown("**Top Comments:**")
-            for _, comment in top_comments.iterrows():
-                st.markdown(
-                    f"""
-                    <div style="
-                        padding: 0.5rem;
-                        border-left: 3px solid #ccc;
-                        margin: 0.5rem 0;
-                    ">
-                        {comment['text']}
-                        <div style="text-align: right; color: #666;">
-                            👍 {comment['like_count']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
 
 def main():
     st.title("YouTube Comments Topic Analyzer")
