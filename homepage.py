@@ -325,7 +325,7 @@ def main():
         if video_id:
             with st.spinner("Fetching and analyzing comments..."):
                 comments_df = get_comments(video_id)
-                comments_df['text'] = comments_df['text'].apply(preprocess_comment)
+                # comments_df['text'] = comments_df['text'].apply(preprocess_comment)
                 topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
                 
                 visualize_clusters(comments_df, topics)
