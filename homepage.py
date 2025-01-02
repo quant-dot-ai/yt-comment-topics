@@ -11,6 +11,12 @@ from transformers import pipeline
 import plotly.express as px
 from sklearn.decomposition import PCA
 import openai
+import re
+import string
+from emoji import replace_emoji
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 # Keys and setup
 api_key = st.secrets["api_keys"]["YOUTUBE_API_KEY"]
@@ -106,6 +112,36 @@ def get_topic_title(terms, comments_df, cluster_id):
         return response.choices[0].message.content.strip()
     except:
         return f"Cluster {cluster_id + 1}"
+
+def preprocess_comment(text):
+    """Clean and standardize comment text for better clustering"""
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove emojis
+    text = replace_emoji(text, '')
+    
+    # Remove URLs
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    
+    # Remove special characters and numbers
+    text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'\d+', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    
+    # Tokenize and remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = word_tokenize(text)
+    tokens = [t for t in tokens if t not in stop_words]
+    
+    # Lemmatize
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(t) for t in tokens]
+    
+    return ' '.join(tokens)
+
 
 def extract_topics_llm(comments_df, num_clusters=5):
     """Extract topics using LLM and clustering"""
@@ -288,6 +324,7 @@ def main():
         if video_id:
             with st.spinner("Fetching and analyzing comments..."):
                 comments_df = get_comments(video_id)
+                comments_df['text'] = comments_df['text'].apply(preprocess_comment)
                 topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
                 
                 visualize_clusters(comments_df, topics)
