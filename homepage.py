@@ -16,7 +16,6 @@ import string
 from emoji import replace_emoji
 from nltk.tokenize import word_tokenize
 import nltk
-nltk.download('stopwords')
 from nltk.stem import WordNetLemmatizer
 
 # Keys and setup
@@ -115,6 +114,7 @@ def get_topic_title(terms, comments_df, cluster_id):
         return f"Cluster {cluster_id + 1}"
 
 def preprocess_comment(text):
+    stopwords = nltk.download('stopwords')
     """Clean and standardize comment text for better clustering"""
     # Convert to lowercase
     text = text.lower()
