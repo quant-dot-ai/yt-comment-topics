@@ -337,7 +337,7 @@ def main():
     st.subheader("Extract topics from YouTube comments using LLM and Clustering")
     
     video_url = st.text_input("Enter YouTube URL", "")
-    num_clusters = st.slider("Number of Topics", min_value=3, max_value=10, value=5)
+    # num_clusters = st.slider("Number of Topics", min_value=3, max_value=10, value=5)
     
     if st.button("Analyze Topics"):
         video_id = extract_video_id(video_url)
@@ -345,7 +345,7 @@ def main():
             with st.spinner("Fetching and analyzing comments..."):
                 comments_df = get_comments(video_id)
                 # comments_df['text'] = comments_df['text'].apply(preprocess_comment)
-                topics, cluster_labels, comments_df = extract_topics_llm(comments_df, num_clusters)
+                topics, cluster_labels, comments_df = extract_topics_llm(comments_df)
                 
                 visualize_clusters(comments_df, topics)
                 display_topics(topics, comments_df)
