@@ -172,7 +172,7 @@ def extract_topics_llm(comments_df):
     optimal_clusters = np.argmax(diffs_2) + 3  # Add 3 because we started at k=2
     
     # Final clustering with optimal number
-    kmeans = KMeans(n_clusters=3 """optimal_clusters""", random_state=42, n_init=10, max_iter=300)
+    kmeans = KMeans(n_clusters=3,random_state=42, n_init=10, max_iter=300)
     cluster_labels = kmeans.fit_predict(tfidf_matrix)
     
     # Rest of the function remains same
