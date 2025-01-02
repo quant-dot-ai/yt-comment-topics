@@ -95,13 +95,13 @@ def get_topic_title(terms, comments_df, cluster_id):
     4. {top_comments[3] if len(top_comments) > 3 else ''}
     5. {top_comments[4] if len(top_comments) > 4 else ''}
     
-    Write a descriptive, human-readable statement that summarizes these comments in 10-15 words.
+    Write a descriptive, human-readable statement that summarizes these comments in 4-10 words. Shorter the better.
     Requirements:
-    - Must be a complete, grammatical sentence
+    - Must capture the keywords and theme
     - Be specific and descriptive about what is being discussed
     - Capture the emotional tone if present (e.g., excitement, nostalgia, criticism)
-    - Avoid generic phrases like "Viewers discuss" or "Comments about"
-    Response should be just the sentence, nothing else."""
+    - Not use phrases like "Viewers discuss" or "Comments about"
+    Response should be just theme/sentence, nothing else."""
     
     try:
         response = openai.ChatCompletion.create(
