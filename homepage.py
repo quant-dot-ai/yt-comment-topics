@@ -15,7 +15,7 @@ import re
 import string
 from emoji import replace_emoji
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+nltk.download('stopwords')
 from nltk.stem import WordNetLemmatizer
 
 # Keys and setup
