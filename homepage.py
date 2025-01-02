@@ -145,28 +145,37 @@ def preprocess_comment(text):
     return ' '.join(tokens)
 
 
-def extract_topics_llm(comments_df, num_clusters=5):
-    """Extract topics using LLM and clustering"""
-
+def extract_topics_llm(comments_df):
+    """Extract topics using LLM and auto-determined clustering"""
     vectorizer = TfidfVectorizer(
         max_features=1000,
         stop_words='english',
-        max_df=0.85,  # Lower to remove more common terms
-        min_df=5,     # Higher to remove rare terms
-        ngram_range=(1, 4)  # Add bigrams
+        max_df=0.85,
+        min_df=5,
+        ngram_range=(1, 2)
     )
-    
     tfidf_matrix = vectorizer.fit_transform(comments_df['text'])
     tfidf_matrix = normalize(tfidf_matrix)
     
-    kmeans = KMeans(
-    n_clusters=num_clusters,
-    random_state=42,
-    n_init=10,    # More initialization attempts
-    max_iter=300  # More iterations for convergence
-    )
+    # Find optimal number of clusters using elbow method
+    max_clusters = min(10, len(comments_df) // 5)  # Cap at 10 or 20% of data
+    inertias = []
+    
+    for k in range(2, max_clusters + 1):
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        kmeans.fit(tfidf_matrix)
+        inertias.append(kmeans.inertia_)
+    
+    # Find elbow point using second derivative
+    diffs = np.diff(inertias)
+    diffs_2 = np.diff(diffs)
+    optimal_clusters = np.argmax(diffs_2) + 3  # Add 3 because we started at k=2
+    
+    # Final clustering with optimal number
+    kmeans = KMeans(n_clusters=optimal_clusters, random_state=42, n_init=10, max_iter=300)
     cluster_labels = kmeans.fit_predict(tfidf_matrix)
     
+    # Rest of the function remains same
     pca = PCA(n_components=2)
     coords = pca.fit_transform(tfidf_matrix.toarray())
     
@@ -177,7 +186,7 @@ def extract_topics_llm(comments_df, num_clusters=5):
     cluster_centers = kmeans.cluster_centers_
     
     topics = []
-    for i in range(num_clusters):
+    for i in range(optimal_clusters):
         cluster_center = cluster_centers[i]
         top_terms_idx = np.argsort(cluster_center)[-5:]
         top_terms = [vectorizer.get_feature_names_out()[idx] for idx in top_terms_idx]
