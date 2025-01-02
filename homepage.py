@@ -5,11 +5,12 @@ import numpy as np
 import googleapiclient.discovery
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import normalize
 from collections import Counter
 from urllib.parse import urlparse, parse_qs
 from transformers import pipeline
 import plotly.express as px
-from sklearn.decomposition import PCA
 import openai
 import re
 import string
@@ -146,15 +147,24 @@ def preprocess_comment(text):
 
 def extract_topics_llm(comments_df, num_clusters=5):
     """Extract topics using LLM and clustering"""
+
     vectorizer = TfidfVectorizer(
         max_features=1000,
         stop_words='english',
-        max_df=0.95,
-        min_df=2
+        max_df=0.85,  # Lower to remove more common terms
+        min_df=5,     # Higher to remove rare terms
+        ngram_range=(1, 4)  # Add bigrams
     )
-    tfidf_matrix = vectorizer.fit_transform(comments_df['text'])
     
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+    tfidf_matrix = vectorizer.fit_transform(comments_df['text'])
+    tfidf_matrix = normalize(tfidf_matrix)
+    
+    kmeans = KMeans(
+    n_clusters=num_clusters,
+    random_state=42,
+    n_init=10,    # More initialization attempts
+    max_iter=300  # More iterations for convergence
+    )
     cluster_labels = kmeans.fit_predict(tfidf_matrix)
     
     pca = PCA(n_components=2)
